@@ -1,0 +1,138 @@
+Employee.js
+const mongoose = require('mongoose');
+
+const EmployeeSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  role: { type: String, required: true },
+  department: { type: String, required: true },
+  email: { type: String },
+  phone: { type: String }
+}, { timestamps: true });
+
+module.exports = mongoose.model('Employee', EmployeeSchema);
+
+employees.js
+
+const express = require('express');
+const router = express.Router();
+const Employee = require('../models/Employee');
+
+// GET /api/employees
+// optional query params: name, department, role
+router.get('/', async (req, res) => {
+  try {
+    const { name, department, role } = req.query;
+    const filter = {};
+
+    if (name) {
+      // case-insensitive partial match
+      filter.name = { $regex: name, $options: 'i' };
+    }
+    if (department) {
+      filter.department = department;
+    }
+    if (role) {
+      filter.role = role;
+    }
+
+    const employees = await Employee.find(filter).sort({ name: 1 });
+    res.json(employees);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/employees/:id
+router.get('/:id', async (req, res) => {
+  try {
+    const emp = await Employee.findOne({ id: req.params.id });
+    if (!emp) return res.status(404).json({ message: 'Employee not found' });
+    res.json(emp);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+module.exports = router;
+
+seed.js
+
+const mongoose = require('mongoose');
+require('dotenv').config();
+const Employee = require('./models/Employee');
+
+const data = [
+  // IT Department
+  { id: 'E101', name: 'John Doe', role: 'Software Engineer', department: 'IT', email: 'john.doe@company.com', phone: '+91 9876543210' },
+  { id: 'E104', name: 'Aisha Khan', role: 'Backend Developer', department: 'IT', email: 'aisha.khan@company.com', phone: '+91 9876522222' },
+  { id: 'E106', name: 'Rohit Verma', role: 'Frontend Developer', department: 'IT', email: 'rohit.verma@company.com', phone: '+91 9876547890' },
+  { id: 'E107', name: 'Sneha Iyer', role: 'UI/UX Designer', department: 'IT', email: 'sneha.iyer@company.com', phone: '+91 9876587654' },
+
+  // HR Department
+  { id: 'E102', name: 'Priya Sharma', role: 'HR Manager', department: 'HR', email: 'priya.sharma@company.com', phone: '+91 9876500000' },
+  { id: 'E108', name: 'Vivek Reddy', role: 'Recruiter', department: 'HR', email: 'vivek.reddy@company.com', phone: '+91 9876512345' },
+
+  // Product Department
+  { id: 'E103', name: 'Karan Patel', role: 'Product Manager', department: 'Product', email: 'karan.patel@company.com', phone: '+91 9876511111' },
+  { id: 'E109', name: 'Divya Menon', role: 'Associate Product Manager', department: 'Product', email: 'divya.menon@company.com', phone: '+91 9876567890' },
+
+  // Analytics Department
+  { id: 'E105', name: 'Sunita Rao', role: 'Data Analyst', department: 'Analytics', email: 'sunita.rao@company.com', phone: '+91 9876533333' },
+  { id: 'E110', name: 'Arjun Desai', role: 'Data Scientist', department: 'Analytics', email: 'arjun.desai@company.com', phone: '+91 9876598765' },
+
+  // Finance Department
+  { id: 'E111', name: 'Meera Joshi', role: 'Accountant', department: 'Finance', email: 'meera.joshi@company.com', phone: '+91 9876554321' },
+  { id: 'E112', name: 'Rajesh Gupta', role: 'Financial Analyst', department: 'Finance', email: 'rajesh.gupta@company.com', phone: '+91 9876576543' },
+
+  // Marketing Department
+  { id: 'E113', name: 'Ananya Rao', role: 'Marketing Specialist', department: 'Marketing', email: 'ananya.rao@company.com', phone: '+91 9876545678' },
+  { id: 'E114', name: 'Vikram Das', role: 'Social Media Manager', department: 'Marketing', email: 'vikram.das@company.com', phone: '+91 9876524680' },
+
+  // Support Department
+  { id: 'E115', name: 'Tanya Bhatia', role: 'Customer Support Executive', department: 'Support', email: 'tanya.bhatia@company.com', phone: '+91 9876509876' }
+];
+
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(async () => {
+    console.log('Connected to DB, seeding...');
+    await Employee.deleteMany({});
+    await Employee.insertMany(data);
+    console.log('✅ 15 Employees seeded successfully!');
+    process.exit(0);
+  })
+  .catch(err => {
+    console.error('❌ Seed error', err);
+    process.exit(1);
+  });
+
+Server.js 
+
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config();
+
+const employeesRoute = require('./routes/employees');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+app.use('/api/employees', employeesRoute);
+
+const PORT = process.env.PORT || 5000;
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(()=> {
+    console.log('MongoDB connected');
+    app.listen(PORT, ()=> console.log(`Server running on port ${PORT}`));
+  })
+  .catch(err => {
+    console.error('Mongo connect error:', err);
+  });
+
+
+
+
+
